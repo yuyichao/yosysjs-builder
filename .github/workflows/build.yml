@@ -101,4 +101,5 @@ jobs:
           git add .
           git commit -m "Auto build of version ${{ steps.version_check.outputs.version }}"
           git tag "v${{ steps.version_check.outputs.version }}"
-          git push --follow-tags
+          git push
+          git push --tags
