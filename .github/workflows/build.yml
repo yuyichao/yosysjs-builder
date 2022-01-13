@@ -1,0 +1,104 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ build ]
+  pull_request:
+    branches: [ build ]
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  build:
+    name: "Build"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    container: # Use archlinux since this makes getting the dependencies easier...
+      image: archlinux:base-devel
+      options: --privileged
+      volumes:
+        - /sys/fs/cgroup:/sys/fs/cgroup
+
+
+    steps:
+      - name: Checkout build scripts
+        uses: actions/checkout@v2
+
+      - name: Initialize ArchLinux
+        run: |
+          bash -e scripts/setup-archlinux.sh
+          chown -R user .
+
+      - name: Installing GIT
+        run: sudo pacman -S --noconfirm git
+        # the actions/checkout@v2 requires this to make an actual git clone.
+
+      - name: Checkout master branch
+        uses: actions/checkout@v2
+        with:
+          ref: master
+          path: yosysjs
+
+      - name: Find latest yosys release
+        uses: oprypin/find-latest-tag@v1
+        with:
+          repository: YosysHQ/yosys
+        id: yosys
+
+      - name: Compute new version
+        run: bash -e scripts/check_and_compute_versions.sh "${{ steps.yosys.outputs.tag }}"
+        id: version_check
+
+      - name: Checkout latest yosys release
+        if: ${{ steps.version_check.outputs.uptodate != 1 }}
+        uses: actions/checkout@v2
+        with:
+          repository: YosysHQ/yosys
+          ref: ${{ steps.yosys.outputs.tag }}
+          path: yosys
+
+      - name: Setting up build environment
+        if: ${{ steps.version_check.outputs.uptodate != 1 }}
+        run: |
+          . /etc/profile # set up PATH for emscripten
+          bash -e scripts/setup_build.sh . yosys
+
+      - name: Building yosys
+        if: ${{ steps.version_check.outputs.uptodate != 1 }}
+        run: |
+          . /etc/profile # set up PATH for emscripten
+          export MAKEFLAGS=-j$(nproc)
+          bash -e scripts/build_yosys.sh . yosys
+
+      - name: Update master branch
+        if: ${{ steps.version_check.outputs.uptodate != 1 }}
+        run: |
+          mkdir -p yosysjs/dist
+          cp -v yosys/yosys.js yosysjs/dist/
+          cp -v yosys/yosys.wasm yosysjs/dist/
+          cp -v yosys/COPYING yosysjs/LICENSE
+
+      - name: Installing npm
+        if: ${{ steps.version_check.outputs.uptodate != 1 }}
+        run: |
+          sudo pacman -S --noconfirm npm
+
+      - name: Updating version
+        if: ${{ steps.version_check.outputs.uptodate != 1 }}
+        run: |
+          cd yosysjs
+          npm version ${{ steps.version_check.outputs.version }} --no-git-tag-version
+
+      - name: Commit changes
+        if: ${{ steps.version_check.outputs.uptodate != 1 }}
+        run: |
+          cd yosysjs
+          git config --global user.name 'Yichao Yu'
+          git config --global user.email 'yuyichao@users.noreply.github.com'
+          git status
+          git add .
+          git commit -m "Auto build of version ${{ steps.version_check.outputs.version }}"
+          git tag "v${{ steps.version_check.outputs.version }}"
+          git push --follow-tags

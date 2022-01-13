@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Larger size for the emcc optimizer
+exec node --stack_size=8192 "$@"
