@@ -3,9 +3,9 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    branches: [ build ]
+    branches: [ master ]
   pull_request:
-    branches: [ build ]
+    branches: [ master ]
   schedule:
     - cron: '0 2 * * *'
 
@@ -26,6 +26,16 @@ jobs:
       - name: Checkout build scripts
         uses: actions/checkout@v2
 
+      - name: Get token
+        # This gets the installation token for the -build repo.
+        # However, by default this would also work for the other installation
+        # (which I assume means other repo for the same owner) so it's fine for now...
+        id: get_token
+        uses: machine-learning-apps/actions-app-token@master
+        with:
+          APP_PEM: ${{ secrets.DIGITALJS_BOT_KEY }}
+          APP_ID: ${{ secrets.DIGITALJS_BOT_ID }}
+
       - name: Initialize ArchLinux
         run: |
           bash -e scripts/setup-archlinux.sh
@@ -35,11 +45,12 @@ jobs:
         run: sudo pacman -S --noconfirm git
         # the actions/checkout@v2 requires this to make an actual git clone.
 
-      - name: Checkout master branch
+      - name: Checkout build result
         uses: actions/checkout@v2
         with:
-          ref: master
+          repository: yuyichao/yosysjs
           path: yosysjs
+          token: ${{ steps.get_token.outputs.app_token }}
 
       - name: Find latest yosys release
         uses: oprypin/find-latest-tag@v1
@@ -72,7 +83,7 @@ jobs:
           export MAKEFLAGS=-j$(nproc)
           bash -e scripts/build_yosys.sh . yosys
 
-      - name: Update master branch
+      - name: Update build result
         if: ${{ steps.version_check.outputs.uptodate != 1 }}
         run: |
           mkdir -p yosysjs/dist
