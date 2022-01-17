@@ -1,0 +1,29 @@
+From 503630f935d5c6f52200b9d474bfea62adb0e619 Mon Sep 17 00:00:00 2001
+From: Yichao Yu <yyc1992@gmail.com>
+Date: Sun, 16 Jan 2022 22:00:50 -0500
+Subject: [PATCH] Do not load host file system
+
+This cause loading failure if nodefs isn't linked in
+and it's also a security vulnerability to require exposing the host fs.
+
+Nothing in the code actually use this and this is completely useless.
+---
+ kernel/driver.cc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/driver.cc b/kernel/driver.cc
+index f8f940e89..aceb079d1 100644
+--- a/kernel/driver.cc
++++ b/kernel/driver.cc
+@@ -95,7 +95,7 @@ extern "C" const char *prompt();
+ int main(int argc, char **argv)
+ {
+ 	EM_ASM(
+-		if (ENVIRONMENT_IS_NODE)
++		if (0 && ENVIRONMENT_IS_NODE)
+ 		{
+ 			FS.mkdir('/hostcwd');
+ 			FS.mount(NODEFS, { root: '.' }, '/hostcwd');
+-- 
+2.34.1
+

@@ -1,0 +1,37 @@
+From 5698bf2c5f3bb065cea9d3300903ca843df06fb9 Mon Sep 17 00:00:00 2001
+From: Yichao Yu <yyc1992@gmail.com>
+Date: Sun, 16 Jan 2022 22:30:23 -0500
+Subject: [PATCH] Include prefix in the logged error
+
+The prefix contains context information during parsing
+---
+ kernel/log.cc | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/log.cc b/kernel/log.cc
+index 4bcce3b28..a3eaffbb5 100644
+--- a/kernel/log.cc
++++ b/kernel/log.cc
+@@ -337,7 +337,8 @@ static void logv_error_with_prefix(const char *prefix,
+ 				f = stderr;
+ 
+ 	log_last_error = vstringf(format, ap);
+-	log("%s%s", prefix, log_last_error.c_str());
++	log_last_error = stringf("%s%s", prefix, log_last_error.c_str());
++	log("%s", log_last_error.c_str());
+ 	log_flush();
+ 
+ 	log_make_debug = bak_log_make_debug;
+@@ -437,7 +438,8 @@ void log_cmd_error(const char *format, ...)
+ 
+ 	if (log_cmd_error_throw) {
+ 		log_last_error = vstringf(format, ap);
+-		log("ERROR: %s", log_last_error.c_str());
++		log_last_error = stringf("ERROR: %s", log_last_error.c_str());
++		log("%s", log_last_error.c_str());
+ 		log_flush();
+ 		throw log_cmd_error_exception();
+ 	}
+-- 
+2.34.1
+
