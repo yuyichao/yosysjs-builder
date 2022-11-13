@@ -7,6 +7,7 @@ pacman-key --init
 pacman-key --populate archlinux
 
 pacman -Syu --noconfirm devtools
+pacman -Rdd --noconfirm breezy # This ships a tools module that breaks the build.
 systemd-machine-id-setup # devtools requires a machine ID
 sed -i "s|MAKEFLAGS=.*|MAKEFLAGS=-j$(nproc)|" /etc/makepkg.conf
 useradd -m user # makepkg needs to be run with non-root
