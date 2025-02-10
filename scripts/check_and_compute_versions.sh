@@ -25,7 +25,7 @@ if [ "$yosys_ver" = "$old_yosys_ver" ] && [ "$build_ver" = "$old_build_ver" ]; t
 fi
 
 echo '::set-output name=uptodate::0'
-if ! [[ "$yosys_ver" =~ ^yosys-([0-9]+)\.([0-9]+)$ ]]; then
+if ! [[ "$yosys_ver" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
     echo "Unexpected yosys version format: ${yosys_ver}" >&2
     exit 1
 fi
