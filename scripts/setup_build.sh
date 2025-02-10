@@ -8,4 +8,4 @@ sudo pacman -S --noconfirm emscripten wasi-compiler-rt wasi-libc++ wasi-libc++ab
 cd "$source_dir"
 
 patch -Np1 < "$builder_dir/patches/0001-Do-not-load-host-file-system.patch"
-patch -Np1 < "$builder_dir/patches/0001-Include-prefix-in-the-logged-error.patch"
+patch -Np1 < "$builder_dir/patches/0002-Include-prefix-in-the-logged-error.patch"
